@@ -1,0 +1,100 @@
+library('quantmod')
+library('PerformanceAnalytics')
+library('tidyverse')
+library('googlesheets')
+library('clipr')
+library('openxlsx')
+
+
+# 데이터 가져오기 (날짜는 월말 데이터 기준으로 표시됨)
+# 티커의 데이터를 자신의 티커 변수명으로 저장 (auto.assign = TRUE)
+
+미국 <- c('NAESX', # Small cap
+             'PREMX', # Emerging bond
+             'VEIEX', # Emerging markets
+             'VFICX', # Intermediate investment grade bond
+             'VFIIX', # GNMA mortgage
+             'VFINX', # S&P 500 index
+             'VGSIX', # MSCI REIT
+             'VGTSX', # Total intl stock idx
+             'VUSTX') # Long term treasury (cash)
+
+한국 = c('102110.KS','114470.KS','148070.KS')
+
+symbol1 = c('SPY', # S$P500
+        'IEF', # 10Y treasury bond
+        'TLT', # 20Y treasury bond
+        'AGG', # Core U.S Aggregate Bond
+        'SHY', # Cash
+        'GLD', # Gold ---> 'IAu'로 대체
+        'IWN') # Russell 2000 value
+
+
+symbol2 = c('SPY', # S$P500
+           'IWN', # Russell 2000 value
+           'VT', # International stock
+           'DLS', # International small cap ---> 짦음
+           'EEM', # International emerging market
+           'EDV', # Extended duration treasury 
+           'IEF', # 10Y treasury bond
+           'TLT', # 20Y treasury bond
+           'IEI', # 3 ~ 7Y treasury bond
+           'AGG', # Core U.S Aggregate Bond
+           'VCLT', # Long term corporate bond
+           'EMLC', # Emerging market local currency bond
+           'LTPZ', # US inflation protected securities (물가연동장기채)
+           'SHY', # Cash
+           'VNQ', # Real estate index fund
+           'GLD', # Gold ---> 'IAu'로 대체
+           'IAU',# Gold
+           'DBC') # Commodity ---> 'BCI'로 대체
+
+symbol3 = c('VUSTX', # Vanguard Long-Term Treasury
+            'VFIIX', # Vanguard GNMA
+            'VFISX', # Vangurard short term treasury
+            'VWESX', # Vanguard long term grade fund investor share
+            'VFICX', # Vanguard intermediate term investment grade 
+            'VFSTX', # Vanguard short term investement grade fund 
+            'VWLTX', # Vanguard long term tax-exempt fund
+            'VWITX', # Vanguard intermediate-term tax-exempt fund
+            'VWSTX', # Vanguard short term tax-exempt fund
+            'VBLTX', # Vanguard long term bond index
+            'VBILX', # Vanguard intermediate-term bond index
+            'VBIRX', # Vanguard short term bond index
+            'LTPZ') # US inflation protected securities (물가연동장기채)
+
+# 가격 불러오는 함수 만들기
+price = function(symbols){
+  # 가격 불러오기 : getSymbols 함수는 심볼의 데이터를 다운받아 심볼 이름의 변수로 저장하는 함수           
+  getSymbols(symbols, src = 'yahoo', from= '2000-11-01', periodicity = 'monthly')
+  
+  # 가격 저장하기 : 싱글 브라켓은 리스트의 원소, 더블 브라켓은 리스트의 개별 원소의 집합을 지칭
+  prices = list()
+  for (i in 1:length(symbols)) {
+    prices[[i]] = Ad(get(symbols[i])[,6])
+  }
+  
+  # Dataframe으로 변형 : 수정 주가만 추출 후 합치기
+  prices = do.call(cbind, prices)
+  colnames(prices) = gsub('\\.[A-z]*', '',colnames(prices))
+  prices = na.omit(prices)
+  return(prices)
+}
+
+tf = function (df){
+  Dates <- index(df)
+  df <- as.data.frame(df)
+  df <- cbind(Date = dates, df)
+  return(df)
+}
+
+a = price(symbol1)
+b = price(symbol2)
+c = price(symbol3)
+
+list_of_datasets <- list("Raw data1" = tf(a), "Raw data2" = tf(b), "Raw data3" = tf(c))
+write.xlsx(list_of_datasets, file = "rawdata.xlsx")
+
+
+
+
